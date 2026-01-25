@@ -26,10 +26,8 @@ app.use(rateLimiter);
 
 
 
-require("./config/passport");
-
-
 app.use(passport.initialize());
+
 
 
 app.use("/api/v1/health", healthRoutes);

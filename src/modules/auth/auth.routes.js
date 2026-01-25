@@ -1,14 +1,17 @@
 const express = require("express");
 const router = express.Router();
 
+const passport = require("passport");
+require("../../config/passport"); 
+
 const authMiddleware = require("../../middlewares/auth.middleware");
 const rbac = require("../../middlewares/rbac.middleware");
 const controller = require("./auth.controller");
 
+
+
 router.post("/register", controller.register);
 router.post("/login", controller.login);
-
-const passport = require("passport");
 
 
 router.get(
@@ -46,9 +49,8 @@ router.get("/google/callback", (req, res, next) => {
         );
       }
 
-      const { token } = user;
       return res.redirect(
-        `${process.env.FRONTEND_URL}/oauth-success?token=${token}`
+        `${process.env.FRONTEND_URL}/oauth-success?token=${user.token}`
       );
     }
   )(req, res, next);
@@ -75,43 +77,18 @@ router.post(
   controller.grantAdmin
 );
 
-router.get(
-  "/google",
-  passport.authenticate("google", {
-    scope: ["profile", "email"],
-    session: false,
-  })
-);
 
-router.get(
-  "/google/callback",
-  passport.authenticate("google", {
-    session: false,
-    failureRedirect: `${process.env.FRONTEND_URL}/login`,
-  }),
-  (req, res) => {
-    const { token } = req.user;
 
-    res.redirect(
-      `${process.env.FRONTEND_URL}/oauth-success?token=${token}`
-    );
-  }
-);
-
-router.get(
-  "/me",
-  authMiddleware,
-  (req, res) => {
-    res.json({
-      success: true,
-      user: {
-        id: req.user.userId,
-        name: req.user.name,
-        email: req.user.email,
-        roles: req.user.roles,
-      },
-    });
-  }
-);
+router.get("/me", authMiddleware, (req, res) => {
+  res.json({
+    success: true,
+    user: {
+      id: req.user.userId,
+      name: req.user.name,
+      email: req.user.email,
+      roles: req.user.roles,
+    },
+  });
+});
 
 module.exports = router;

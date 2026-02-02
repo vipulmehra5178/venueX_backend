@@ -1,67 +1,44 @@
-const eventService = require("./event.service");
+const Event = require("../../models/event.model");
 
-exports.createEvent = async (req, res, next) => {
-  try {
-    const event = await eventService.createEvent(
-      req.body,
-      req.user.userId
-    );
+exports.createEvent = async (req, res) => {
+  const event = await Event.create({
+    ...req.body,
+    organizerId: req.user.userId,
+    availableTickets: req.body.totalTickets,
+  });
 
-    res.status(201).json({
-      message: "Event created successfully",
-      event
-    });
-  } catch (err) {
-    next(err);
-  }
+  res.status(201).json(event);
 };
 
-exports.getEvents = async (req, res, next) => {
-  try {
-    const events = await eventService.getAllEvents();
-    res.json(events);
-  } catch (err) {
-    next(err);
+exports.updateEvent = async (req, res) => {
+  const event = await Event.findById(req.params.id);
+
+  if (!event) return res.status(404).json({ message: "Event not found" });
+
+  if (
+    event.organizerId.toString() !== req.user.userId &&
+    !req.user.roles.includes("admin")
+  ) {
+    return res.status(403).json({ message: "Forbidden" });
   }
+
+  Object.assign(event, req.body);
+  await event.save();
+
+  res.json(event);
 };
 
-exports.getEvent = async (req, res, next) => {
-  try {
-    const event = await eventService.getEventById(req.params.id);
-    res.json(event);
-  } catch (err) {
-    next(err);
-  }
+exports.getAllEvents = async (req, res) => {
+  const events = await Event.find({ status: "published" }).sort({ createdAt: -1 });
+  res.json(events);
 };
 
-exports.updateEvent = async (req, res, next) => {
-  try {
-    const event = await eventService.updateEvent(
-      req.params.id,
-      req.body,
-      req.user
-    );
-
-    res.json({
-      message: "Event updated",
-      event
-    });
-  } catch (err) {
-    next(err);
-  }
+exports.getEventById = async (req, res) => {
+  const event = await Event.findById(req.params.id);
+  res.json(event);
 };
 
-
-exports.deleteEvent = async (req, res, next) => {
-  try {
-    await eventService.deleteEvent(
-      req.params.id,
-      req.user
-    );
-
-    res.json({ message: "Event cancelled" });
-  } catch (err) {
-    next(err);
-  }
+exports.cancelEvent = async (req, res) => {
+  await Event.findByIdAndUpdate(req.params.id, { status: "cancelled" });
+  res.json({ message: "Event cancelled" });
 };
-

@@ -4,15 +4,18 @@ exports.createEvent = async (data, organizerId) => {
   const event = await Event.create({
     ...data,
     organizerId,
-    availableTickets: data.totalTickets
+    availableTickets: data.totalTickets,
   });
 
   return event;
 };
 
 exports.getAllEvents = async () => {
-  return Event.find({ status: "active" }).sort({ dateTime: 1 });
+  return Event.find({ status: "active" })
+    .sort({ dateTime: 1 })
+    .lean();
 };
+
 
 exports.getEventById = async (id) => {
   return Event.findById(id);
@@ -26,14 +29,8 @@ exports.updateEvent = async (eventId, data, user) => {
   } else {
     event = await Event.findOne({
       _id: eventId,
-      organizerId: user.userId
+      organizerId: user.userId,
     });
-    const io = getIO();
-
-io.to(`event_${event._id}`).emit("EVENT_UPDATED", {
-  event
-});
-
   }
 
   if (!event) throw new Error("Event not found or unauthorized");
@@ -44,7 +41,6 @@ io.to(`event_${event._id}`).emit("EVENT_UPDATED", {
   return event;
 };
 
-
 exports.deleteEvent = async (eventId, user) => {
   let event;
 
@@ -53,7 +49,7 @@ exports.deleteEvent = async (eventId, user) => {
   } else {
     event = await Event.findOne({
       _id: eventId,
-      organizerId: user.userId
+      organizerId: user.userId,
     });
   }
 
@@ -61,9 +57,6 @@ exports.deleteEvent = async (eventId, user) => {
 
   event.status = "cancelled";
   await event.save();
-  io.to(`event_${event._id}`).emit("EVENT_CANCELLED", {
-  eventId: event._id
-});
 
+  return event;
 };
-

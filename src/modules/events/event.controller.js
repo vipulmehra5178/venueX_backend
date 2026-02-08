@@ -11,34 +11,126 @@ exports.createEvent = async (req, res) => {
 };
 
 exports.updateEvent = async (req, res) => {
-  const event = await Event.findById(req.params.id);
+  try {
+    const event = await Event.findById(req.params.id);
 
-  if (!event) return res.status(404).json({ message: "Event not found" });
+    if (!event) {
+      return res.status(404).json({ message: "Event not found" });
+    }
 
-  if (
-    event.organizerId.toString() !== req.user.userId &&
-    !req.user.roles.includes("admin")
-  ) {
-    return res.status(403).json({ message: "Forbidden" });
+    if (
+      !req.user.roles.includes("admin") &&
+      event.organizerId.toString() !== req.user.userId
+    ) {
+      return res.status(403).json({
+        message: "You are not allowed to edit this event",
+      });
+    }
+
+    Object.assign(event, req.body);
+    await event.save();
+
+    res.json(event);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to update event" });
+  }
+};
+
+exports.getAllEvents = async (req, res) => {
+  const { search, category, city, sort } = req.query;
+
+  const filter = { status: "published" };
+
+  if (search) {
+    filter.$or = [
+      { title: new RegExp(search, "i") },
+      { subtitle: new RegExp(search, "i") },
+      { tags: new RegExp(search, "i") },
+    ];
   }
 
-  Object.assign(event, req.body);
+  if (category && category !== "All") {
+    filter.category = category;
+  }
+
+  if (city) {
+    filter.city = new RegExp(city, "i");
+  }
+
+  let query = Event.find(filter);
+
+  if (sort === "date") {
+    query = query.sort({ startDateTime: 1 });
+  } else if (sort === "price") {
+    query = query.sort({ ticketPrice: 1 });
+  } else if (sort === "popular") {
+    query = query.sort({ views: -1 });
+  } else {
+    query = query.sort({ createdAt: -1 });
+  }
+
+  const events = await query;
+  res.json(events);
+};
+
+
+exports.getEventById = async (req, res) => {
+  const event = await Event.findById(req.params.id);
+  if (!event) return res.status(404).json({ message: "Event not found" });
+
+  event.views += 1;
   await event.save();
 
   res.json(event);
 };
 
-exports.getAllEvents = async (req, res) => {
-  const events = await Event.find({ status: "published" }).sort({ createdAt: -1 });
-  res.json(events);
-};
-
-exports.getEventById = async (req, res) => {
-  const event = await Event.findById(req.params.id);
-  res.json(event);
-};
 
 exports.cancelEvent = async (req, res) => {
-  await Event.findByIdAndUpdate(req.params.id, { status: "cancelled" });
-  res.json({ message: "Event cancelled" });
+  try {
+    const event = await Event.findById(req.params.id);
+
+    if (!event) {
+      return res.status(404).json({ message: "Event not found" });
+    }
+
+    if (
+      !req.user.roles.includes("admin") &&
+      event.organizerId.toString() !== req.user.userId
+    ) {
+      return res.status(403).json({
+        message: "You are not allowed to cancel this event",
+      });
+    }
+
+    event.status = "cancelled";
+    await event.save();
+
+    res.json({ message: "Event cancelled successfully" });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to cancel event" });
+  }
 };
+exports.getMyEvents = async (req, res) => {
+  try {
+    if (req.user.roles.includes("admin")) {
+      const events = await Event.find({
+          status: "published",
+
+      }).sort({ createdAt: -1 });
+      return res.json(events);
+    }
+
+    const events = await Event.find({
+      organizerId: req.user.userId,
+        status: "published",
+
+    }).sort({ createdAt: -1 });
+
+    res.json(events);
+  } catch (err) {
+    res.status(500).json({
+      message: "Failed to fetch organizer events",
+    });
+  }
+};
+

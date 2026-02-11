@@ -15,21 +15,22 @@ exports.register = async (req, res) => {
       },
     });
   } catch (err) {
-    console.error("Registration Error:", err.message);
+    console.error("Error during registration:", err);
 
     if (err.message === "Email already registered") {
-      return res.status(409).json({ message: err.message });
+      return res.status(409).json({ message: "Email already registered" });
     }
 
-    return res.status(500).json({ message: "Something went wrong" });
+    return res.status(500).json({ message: "An unexpected error occurred" });
   }
 };
+
 
 exports.login = async (req, res) => {
   try {
     const result = await authService.login(req.body);
 
-    return res.json({
+    res.json({
       success: true,
       token: result.token,
       user: {
@@ -40,54 +41,21 @@ exports.login = async (req, res) => {
       },
     });
   } catch (err) {
-    return res.status(400).json({ message: err.message });
+    res.status(400).json({ message: err.message });
   }
 };
 
 exports.requestOrganizer = async (req, res) => {
-  try {
-    const userId = req.user.userId;
-
-    await authService.requestOrganizer(userId);
-
-    return res.json({
-      success: true,
-      message: "Organizer request submitted successfully",
-    });
-  } catch (err) {
-    console.error("Organizer Request Error:", err.message);
-    return res.status(400).json({ message: err.message });
-  }
+  await authService.requestOrganizer(req.user.userId);
+  res.json({ success: true });
 };
 
 exports.approveOrganizer = async (req, res) => {
-  try {
-    const { userId } = req.body;
-    const adminId = req.user.userId;
-
-    await authService.approveOrganizer(userId, adminId);
-
-    return res.json({
-      success: true,
-      message: "Organizer role approved",
-    });
-  } catch (err) {
-    return res.status(400).json({ message: err.message });
-  }
+  await authService.approveOrganizer(req.body.userId, req.user.userId);
+  res.json({ success: true });
 };
 
 exports.grantAdmin = async (req, res) => {
-  try {
-    const { userId } = req.body;
-    const adminId = req.user.userId;
-
-    await authService.grantAdmin(userId, adminId);
-
-    return res.json({
-      success: true,
-      message: "Admin role granted",
-    });
-  } catch (err) {
-    return res.status(400).json({ message: err.message });
-  }
+  await authService.grantAdmin(req.body.userId, req.user.userId);
+  res.json({ success: true });
 };

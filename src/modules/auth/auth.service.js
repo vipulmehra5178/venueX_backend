@@ -5,6 +5,7 @@ const AuditLog = require("../../models/auditLog.model");
 
 const JWT_SECRET = process.env.JWT_SECRET || "SUPER_SECRET_KEY";
 
+
 const generateToken = (user) =>
   jwt.sign(
     {
@@ -17,11 +18,16 @@ const generateToken = (user) =>
     { expiresIn: "7d" }
   );
 
-exports.register = async ({ name, email, password, city, phone, authProvider = "local" }) => {
+exports.register = async ({
+  name,
+  email,
+  password,
+  city,
+  phone,
+  authProvider = "local",
+}) => {
   const exists = await User.findOne({ email });
-  if (exists) {
-    throw new Error("Email already registered"); 
-  }
+  if (exists) throw new Error("Email already registered");
 
   let hashedPassword;
   if (authProvider === "local") {
@@ -33,7 +39,7 @@ exports.register = async ({ name, email, password, city, phone, authProvider = "
     email,
     password: hashedPassword,
     profile: { city, phone },
-    roles: ['attendee'],
+    roles: ["attendee"],
     authProvider,
   });
 
@@ -43,9 +49,9 @@ exports.register = async ({ name, email, password, city, phone, authProvider = "
   };
 };
 
-
 exports.login = async ({ email, password }) => {
   const user = await User.findOne({ email });
+
   if (!user || user.authProvider !== "local") {
     throw new Error("Invalid credentials");
   }
@@ -60,6 +66,22 @@ exports.login = async ({ email, password }) => {
 };
 
 exports.requestOrganizer = async (userId) => {
+  const user = await User.findById(userId);
+  if (!user) throw new Error("User not found");
+
+  if (user.roles.includes("organizer")) {
+    throw new Error("You are already an organizer");
+  }
+
+  const existingRequest = await AuditLog.findOne({
+    userId,
+    action: "REQUEST_ORGANIZER_ROLE",
+  });
+
+  if (existingRequest) {
+    throw new Error("Organizer request already submitted");
+  }
+
   await AuditLog.create({
     userId,
     action: "REQUEST_ORGANIZER_ROLE",
@@ -83,6 +105,7 @@ exports.approveOrganizer = async (userId, adminId) => {
 
   return user;
 };
+
 
 exports.grantAdmin = async (userId, adminId) => {
   const user = await User.findById(userId);

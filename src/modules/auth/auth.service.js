@@ -5,7 +5,6 @@ const AuditLog = require("../../models/auditLog.model");
 
 const JWT_SECRET = process.env.JWT_SECRET || "SUPER_SECRET_KEY";
 
-
 const generateToken = (user) =>
   jwt.sign(
     {
@@ -30,7 +29,9 @@ exports.register = async ({
   if (exists) throw new Error("Email already registered");
 
   let hashedPassword;
+
   if (authProvider === "local") {
+    if (!password) throw new Error("Password is required");
     hashedPassword = await bcrypt.hash(password, 12);
   }
 
@@ -105,7 +106,6 @@ exports.approveOrganizer = async (userId, adminId) => {
 
   return user;
 };
-
 
 exports.grantAdmin = async (userId, adminId) => {
   const user = await User.findById(userId);

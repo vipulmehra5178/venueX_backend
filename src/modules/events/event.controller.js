@@ -1,4 +1,5 @@
 const Event = require("../../models/event.model");
+const EventSettlementRequest = require("../../models/eventSettlementRequest.model");
 
 exports.createEvent = async (req, res) => {
   const event = await Event.create({
@@ -18,6 +19,19 @@ exports.updateEvent = async (req, res) => {
       return res.status(404).json({ message: "Event not found" });
     }
 
+
+const settlement = await EventSettlementRequest.findOne({
+  eventId: event._id,
+  status: { $in: ["requested", "under_review", "approved", "paid"] },
+});
+
+if (settlement) {
+  return res.status(403).json({
+    message: "Event locked due to settlement process",
+  });
+}
+
+
     if (
       !req.user.roles.includes("admin") &&
       event.organizerId.toString() !== req.user.userId
@@ -35,6 +49,7 @@ exports.updateEvent = async (req, res) => {
     res.status(500).json({ message: "Failed to update event" });
   }
 };
+
 
 exports.getAllEvents = async (req, res) => {
   const { search, category, city, sort } = req.query;
@@ -93,6 +108,13 @@ exports.cancelEvent = async (req, res) => {
       return res.status(404).json({ message: "Event not found" });
     }
 
+    if (["requested", "settled"].includes(event.settlementStatus)) {
+      return res.status(403).json({
+        message:
+          "Event cannot be cancelled after settlement request.",
+      });
+    }
+
     if (
       !req.user.roles.includes("admin") &&
       event.organizerId.toString() !== req.user.userId
@@ -110,6 +132,7 @@ exports.cancelEvent = async (req, res) => {
     res.status(500).json({ message: "Failed to cancel event" });
   }
 };
+
 exports.getMyEvents = async (req, res) => {
   try {
     if (req.user.roles.includes("admin")) {

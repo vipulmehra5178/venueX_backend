@@ -54,9 +54,13 @@
         default: "published",
       },
 
+
+
       views: { type: Number, default: 0 },
       publishedAt: { type: Date, default: Date.now },
     },
+    
+    
     { timestamps: true }
   );
 

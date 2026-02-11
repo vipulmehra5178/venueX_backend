@@ -12,7 +12,7 @@ const authRoutes = require("./modules/auth/auth.routes");
 const eventRoutes = require("./modules/events/event.routes");
 const adminRoutes = require("./modules/admin/admin.routes");
 const bookingRoutes = require("./modules/bookings/bookings.routes");
-
+const analyticsRoutes = require("./modules/analytics/analytics.routes");
 
 const app = express();
 
@@ -40,6 +40,9 @@ app.use("/api/v1/bookings", bookingRoutes);
 
 app.use("/api/v1/admin", adminRoutes);
 
+app.use("/api/v1/analytics", analyticsRoutes);
+
+app.use("/api/v1/settlements", require("./modules/settlements/settlement.routes"));
 
 app.use((req, res) => {
   res.status(404).json({

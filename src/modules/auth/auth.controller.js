@@ -45,10 +45,20 @@ exports.login = async (req, res) => {
   }
 };
 
-exports.requestOrganizer = async (req, res) => {
-  await authService.requestOrganizer(req.user.userId);
-  res.json({ success: true });
+exports.requestOrganizer = async (userId) => {
+  const existing = await AuditLog.findOne({
+    userId,
+    action: "REQUEST_ORGANIZER_ROLE",
+  });
+
+  if (existing) return;
+
+  await AuditLog.create({
+    userId,
+    action: "REQUEST_ORGANIZER_ROLE",
+  });
 };
+
 
 exports.approveOrganizer = async (req, res) => {
   await authService.approveOrganizer(req.body.userId, req.user.userId);

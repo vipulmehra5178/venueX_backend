@@ -7,9 +7,10 @@ exports.getPendingOrganizers = async () => {
   });
 
   const userIds = logs.map((l) => l.userId);
+return User.find({
+  _id: { $in: userIds },
+  roles: { $ne: "organizer" }
+})
+.select("name email roles createdAt");
 
-  return User.find({
-    _id: { $in: userIds },
-    roles: "attendee",
-  }).select("name email roles createdAt");
 };

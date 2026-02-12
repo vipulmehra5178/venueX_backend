@@ -17,10 +17,17 @@ const generateToken = (user) =>
     { expiresIn: "7d" }
   );
 
-exports.register = async ({ name, email, password, city, phone, authProvider = "local" }) => {
+exports.register = async ({
+  name,
+  email,
+  password,
+  city,
+  phone,
+  authProvider = "local",
+}) => {
   const exists = await User.findOne({ email });
   if (exists) {
-    throw new Error("Email already registered"); 
+    throw new Error("Email already registered");
   }
 
   let hashedPassword;
@@ -33,7 +40,7 @@ exports.register = async ({ name, email, password, city, phone, authProvider = "
     email,
     password: hashedPassword,
     profile: { city, phone },
-    roles: ['attendee'],
+    roles: ["attendee"],
     authProvider,
   });
 
@@ -43,9 +50,9 @@ exports.register = async ({ name, email, password, city, phone, authProvider = "
   };
 };
 
-
 exports.login = async ({ email, password }) => {
   const user = await User.findOne({ email });
+
   if (!user || user.authProvider !== "local") {
     throw new Error("Invalid credentials");
   }
@@ -60,10 +67,26 @@ exports.login = async ({ email, password }) => {
 };
 
 exports.requestOrganizer = async (userId) => {
+  const user = await User.findById(userId);
+  if (!user) throw new Error("User not found");
+
+  if (user.organizerRequestStatus === "pending") {
+    throw new Error("Request already submitted");
+  }
+
+  if (user.roles.includes("organizer")) {
+    throw new Error("User is already an organizer");
+  }
+
+  user.organizerRequestStatus = "pending";
+  await user.save();
+
   await AuditLog.create({
     userId,
     action: "REQUEST_ORGANIZER_ROLE",
   });
+
+  return user;
 };
 
 exports.approveOrganizer = async (userId, adminId) => {
@@ -72,8 +95,10 @@ exports.approveOrganizer = async (userId, adminId) => {
 
   if (!user.roles.includes("organizer")) {
     user.roles.push("organizer");
-    await user.save();
   }
+
+  user.organizerRequestStatus = "approved";
+  await user.save();
 
   await AuditLog.create({
     userId,

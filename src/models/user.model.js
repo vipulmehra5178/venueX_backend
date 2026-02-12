@@ -41,21 +41,20 @@ const userSchema = new mongoose.Schema(
     profile: {
       city: String,
       phone: String,
-    },platformFeePercent: {
-  type: Number,
-  default: null, 
-},organizerRequestStatus: {
-  type: String,
-  enum: ["none", "pending", "approved"],
-  default: "none"
-},
+    },
+
+
+    organizerRequestStatus: {
+      type: String,
+      enum: ["none", "pending", "approved"],
+      default: "none",
+    },
 
     isEmailVerified: {
       type: Boolean,
       default: false,
     },
   },
-  
   { timestamps: true }
 );
 

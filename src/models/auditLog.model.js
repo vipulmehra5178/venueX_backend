@@ -2,10 +2,21 @@ const mongoose = require("mongoose");
 
 const auditLogSchema = new mongoose.Schema(
   {
-    userId: mongoose.Schema.Types.ObjectId,
-    action: String,
-    performedBy: mongoose.Schema.Types.ObjectId,
-    metadata: Object
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+
+    action: {
+      type: String,
+      required: true,
+    },
+
+    performedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
   },
   { timestamps: true }
 );

@@ -2,17 +2,14 @@ const express = require("express");
 const router = express.Router();
 
 const passport = require("passport");
-require("../../config/passport"); 
+require("../../config/passport");
 
 const authMiddleware = require("../../middlewares/auth.middleware");
 const rbac = require("../../middlewares/rbac.middleware");
 const controller = require("./auth.controller");
 
-
-
 router.post("/register", controller.register);
 router.post("/login", controller.login);
-
 
 router.get(
   "/google/login",
@@ -33,29 +30,24 @@ router.get(
 );
 
 router.get("/google/callback", (req, res, next) => {
-  passport.authenticate(
-    "google",
-    { session: false },
-    (err, user) => {
-      if (err && err.message === "ACCOUNT_NOT_FOUND") {
-        return res.redirect(
-          `${process.env.FRONTEND_URL}/register?error=google_account_not_found`
-        );
-      }
-
-      if (err || !user) {
-        return res.redirect(
-          `${process.env.FRONTEND_URL}/login?error=google_auth_failed`
-        );
-      }
-
+  passport.authenticate("google", { session: false }, (err, user) => {
+    if (err && err.message === "ACCOUNT_NOT_FOUND") {
       return res.redirect(
-        `${process.env.FRONTEND_URL}/oauth-success?token=${user.token}`
+        `${process.env.FRONTEND_URL}/register?error=google_account_not_found`
       );
     }
-  )(req, res, next);
-});
 
+    if (err || !user) {
+      return res.redirect(
+        `${process.env.FRONTEND_URL}/login?error=google_auth_failed`
+      );
+    }
+
+    return res.redirect(
+      `${process.env.FRONTEND_URL}/oauth-success?token=${user.token}`
+    );
+  })(req, res, next);
+});
 
 router.post(
   "/request-organizer",
@@ -76,8 +68,6 @@ router.post(
   rbac(["admin"]),
   controller.grantAdmin
 );
-
-
 
 router.get("/me", authMiddleware, (req, res) => {
   res.json({

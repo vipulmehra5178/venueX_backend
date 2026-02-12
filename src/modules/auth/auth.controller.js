@@ -15,16 +15,15 @@ exports.register = async (req, res) => {
       },
     });
   } catch (err) {
-    console.error("Error during registration:", err);
+    console.error("Registration Error:", err);
 
     if (err.message === "Email already registered") {
-      return res.status(409).json({ message: "Email already registered" });
+      return res.status(409).json({ message: err.message });
     }
 
     return res.status(500).json({ message: "An unexpected error occurred" });
   }
 };
-
 
 exports.login = async (req, res) => {
   try {
@@ -46,16 +45,34 @@ exports.login = async (req, res) => {
 };
 
 exports.requestOrganizer = async (req, res) => {
-  await authService.requestOrganizer(req.user.userId);
-  res.json({ success: true });
+  try {
+    const user = await authService.requestOrganizer(req.user.userId);
+
+    res.json({
+      success: true,
+      message: "Organizer request submitted",
+      status: user.organizerRequestStatus,
+    });
+  } catch (err) {
+    console.error("Request Organizer Error:", err);
+    res.status(400).json({ message: err.message });
+  }
 };
 
 exports.approveOrganizer = async (req, res) => {
-  await authService.approveOrganizer(req.body.userId, req.user.userId);
-  res.json({ success: true });
+  try {
+    await authService.approveOrganizer(req.body.userId, req.user.userId);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
 };
 
 exports.grantAdmin = async (req, res) => {
-  await authService.grantAdmin(req.body.userId, req.user.userId);
-  res.json({ success: true });
+  try {
+    await authService.grantAdmin(req.body.userId, req.user.userId);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
 };

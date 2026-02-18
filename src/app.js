@@ -3,6 +3,7 @@ const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
 const passport =require("passport");
+const compression = require("compression");
 
 const rateLimiter = require("./middlewares/rateLimiter.middleware");
 const errorHandler = require("./middlewares/error.middleware");
@@ -15,6 +16,9 @@ const bookingRoutes = require("./modules/bookings/bookings.routes");
 const analyticsRoutes = require("./modules/analytics/analytics.routes");
 
 const app = express();
+
+app.use(compression());
+
 
 app.use(helmet());
 

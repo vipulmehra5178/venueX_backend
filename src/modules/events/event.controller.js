@@ -51,6 +51,8 @@ exports.updateEvent = async (req, res) => {
     res.status(500).json({ message: "Failed to update event" });
   }
 };
+
+
 exports.getAllEvents = async (req, res) => {
   try {
     const {
@@ -61,9 +63,6 @@ exports.getAllEvents = async (req, res) => {
       page = 1,
       limit = 12,
     } = req.query;
-
-    const pageNumber = Number(page) || 1;
-    const limitNumber = Number(limit) || 12;
 
     const filter = { status: "published" };
 
@@ -79,12 +78,14 @@ exports.getAllEvents = async (req, res) => {
       filter.city = city;
     }
 
-    const skip = (pageNumber - 1) * limitNumber;
+    const skip = (page - 1) * limit;
 
     let query = Event.find(filter)
       .select("title subtitle category city startDateTime ticketPrice availableTickets totalTickets isPaid coverImage views")
+
       .lean();
 
+   
     if (sort === "date") {
       query = query.sort({ startDateTime: 1 });
     } else if (sort === "price") {
@@ -95,23 +96,13 @@ exports.getAllEvents = async (req, res) => {
       query = query.sort({ createdAt: -1 });
     }
 
-    const [events, totalResults] = await Promise.all([
-      query.skip(skip).limit(limitNumber),
-      Event.countDocuments(filter),
-    ]);
+    const events = await query.skip(skip).limit(Number(limit));
 
-    res.json({
-      events,
-      totalPages: Math.ceil(totalResults / limitNumber),
-      totalResults,
-      currentPage: pageNumber,
-    });
-
+    res.json(events);
   } catch (err) {
     res.status(500).json({ message: "Failed to fetch events" });
   }
 };
-
 
 
 exports.getEventById = async (req, res) => {
